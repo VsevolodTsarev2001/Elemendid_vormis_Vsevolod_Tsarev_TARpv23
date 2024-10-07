@@ -1,8 +1,12 @@
-﻿namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
+﻿using Microsoft.VisualBasic;
+using System.Data;
+using System.Diagnostics;
+
+namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
 {
     public partial class StartVorm : Form
     {
-        List<string> elemendid = new List<string> { "Nupp", "Silt", "Pilt", "Märkeruut", "Raadionupp", "Tekstikast" };
+        List<string> elemendid = new List<string> { "Nupp", "Silt", "Pilt", "Märkeruut", "Raadionupp", "Tekstikast", "Loetelu","Tabel","Dialoogiaknad"};
         List<string> rbtn_list = new List<string> { "Üks", "Kaks", "Kolm"};
         TreeView tree;
         Button btn;
@@ -11,6 +15,9 @@
         CheckBox chk1, chk2;
         RadioButton rbtn, rbtn1, rbtn2, rbtn3;
         TextBox txt;
+        ListBox lb;
+        DataSet ds;
+        DataGridView dg;
         int tt = 0;
         int t = 0;
 
@@ -96,15 +103,6 @@
 
         private void Tree_AfterSelect(object sender, TreeViewEventArgs e)
         {
-            this.BackColor = e.Node.Text switch
-            {
-                "Nupp" => Color.LightBlue,
-                "Silt" => Color.LightGreen,
-                "Pilt" => Color.LightCoral,
-                "Märkeruut" => Color.LightGoldenrodYellow,
-                _ => this.BackColor
-            };
-
             if (e.Node.Text == "Nupp")
             {
                 Controls.Add(btn);
@@ -142,20 +140,20 @@
                 rbtn1 = new RadioButton();
                 rbtn1.Checked = false;
                 rbtn1.Text = "Must teema";
-                rbtn1.Location = new Point(150, 420);
-                rbtn1.CheckedChanged += new EventHandler (Rbtn_CheckedChanged);
+                rbtn1.Location = new Point(150, 380);
+                rbtn1.CheckedChanged += new EventHandler(Rbtn_CheckedChanged);
 
                 rbtn2 = new RadioButton();
                 rbtn2.Checked = false;
                 rbtn2.Text = "Valge teema";
-                rbtn2.Location = new Point(150, 440);
-                rbtn2.CheckedChanged += new EventHandler (Rbtn_CheckedChanged);
+                rbtn2.Location = new Point(150, 400);
+                rbtn2.CheckedChanged += new EventHandler(Rbtn_CheckedChanged);
 
                 rbtn3 = new RadioButton();
                 rbtn3.Checked = false;
                 rbtn3.Text = "Roheline teema";
-                rbtn3.Location = new Point(150, 460);
-                rbtn3.CheckedChanged += new EventHandler (Rbtn_CheckedChanged);
+                rbtn3.Location = new Point(150, 420);
+                rbtn3.CheckedChanged += new EventHandler(Rbtn_CheckedChanged);
 
                 this.Controls.Add(rbtn1);
                 this.Controls.Add(rbtn2);
@@ -179,12 +177,60 @@
             }
             else if (e.Node.Text == "Tekstikast")
             {
-                txt=new TextBox();
-                txt.Location = new Point(150+btn.Width+5, btn.Height);
+                txt = new TextBox();
+                txt.Location = new Point(150 + btn.Width + 5, btn.Height);
                 txt.Font = new Font("Arial", 30);
                 txt.Width = 200;
                 txt.TextChanged += Txt_TextChanged;
                 Controls.Add(txt);
+            }
+            else if (e.Node.Text == "Loetelu")
+            {
+                lb = new ListBox();
+                foreach (string item in rbtn_list)
+                {
+                    lb.Items.Add(item);
+                }
+                lb.Height = 50;
+                lb.Location = new Point(160 + btn.Width + txt.Width, btn.Height);
+                lb.SelectedIndexChanged += Lb_SelectedIndexChanged;
+                Controls.Add(lb);
+            }
+            else if (e.Node.Text == "Tabel")
+            {
+                ds = new DataSet("XML fail");
+                ds.ReadXml(@"..\..\..\menu.xml");
+                dg = new DataGridView();
+                dg.Location = new Point(160 + chk1.Width, txt.Height + lbl.Height + 10);
+                dg.DataSource = ds;
+                dg.DataMember = "food";
+                dg.RowHeaderMouseClick += Dg_RowHeaderMouseClick;
+                Controls.Add(dg);
+            }
+            else if (e.Node.Text == "Dialoogiaknad")
+            {
+                MessageBox.Show("Dialoog", "See on lihtne aken");
+                var vastus = MessageBox.Show("Sisestame andmed", "Kas tahad InputBoxi kasutada?", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                if (vastus == DialogResult.Yes)
+                {
+                    string text = Interaction.InputBox("Sisesta midagi siia", "andmete sisestamine");
+                    MessageBox.Show("Oli sisestatud" + text);
+                }   
+            }
+        }
+
+        private void Dg_RowHeaderMouseClick(object? sender, DataGridViewCellMouseEventArgs e)
+        {
+            txt.Text= dg.Rows[e.RowIndex].Cells[0].Value.ToString()+" hind "+ dg.Rows[e.RowIndex].Cells[1].Value.ToString();
+        }
+
+        private void Lb_SelectedIndexChanged(object? sender, EventArgs e)
+        {
+            switch (lb.SelectedIndex)
+            {
+                case 0: tree.BackColor = Color.MistyRose; break;
+                case 1:tree.BackColor = Color.SlateGray; break;
+                case 2:tree.BackColor= Color.Crimson; break;
             }
         }
 
@@ -205,26 +251,17 @@
             {
                 this.BackColor = Color.Black;
                 this.ForeColor = Color.White;
-                rbtn3.ForeColor = Color.White;
-                rbtn2.ForeColor = Color.White;
-                rbtn1.ForeColor = Color.White;
                 
             }
             else if (rbtn2.Checked)
             {
-                this.BackColor = Color.Black;
-                this.ForeColor = Color.White;
-                rbtn3.ForeColor = Color.Black;
-                rbtn2.ForeColor = Color.Black;
-                rbtn1.ForeColor = Color.Black;
+                this.BackColor = Color.White ;
+                this.ForeColor = Color.Black;
             }
-            else if (rbtn2.Checked)
+            else if (rbtn3.Checked)
             {
-                this.BackColor = Color.Black;
-                this.ForeColor = Color.White;
-                rbtn3.ForeColor = Color.Green;
-                rbtn2.ForeColor = Color.Green;
-                rbtn1.ForeColor = Color.Green;
+                this.BackColor = Color.Green;
+                this.ForeColor = Color.Blue;
             }
         }
 
