@@ -13,7 +13,7 @@ namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
         Label lbl;
         PictureBox pbox;
         CheckBox chk1, chk2;
-        RadioButton rbtn, rbtn1, rbtn2, rbtn3;
+        RadioButton rbtn, rbtn1, rbtn2, rbtn3, rbtn4, rbtn5, rbtn6;
         TextBox txt;
         ListBox lb;
         DataSet ds;
@@ -99,8 +99,9 @@ namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
         {
             t++;
             btn.BackColor = t % 2 == 0 ? Color.Red : Color.Blue;
+            Pildivaatur teineVorm = new Pildivaatur(200, 200);
+            teineVorm.Show();
         }
-
         private void Tree_AfterSelect(object sender, TreeViewEventArgs e)
         {
             if (e.Node.Text == "Nupp")
@@ -155,9 +156,31 @@ namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
                 rbtn3.Location = new Point(150, 420);
                 rbtn3.CheckedChanged += new EventHandler(Rbtn_CheckedChanged);
 
+                rbtn4 = new RadioButton();
+                rbtn4.Checked = false;
+                rbtn4.Text = "pildivaatur";
+                rbtn4.Location = new Point(550, 380);
+                rbtn4.Click += Pildivaatur;
+
+                rbtn5 = new RadioButton();
+                rbtn5.Checked = false;
+                rbtn5.Text = "matemaatika viktoriin";
+                rbtn5.Location = new Point(550, 400);
+                rbtn5.Click += matemaatika_viktoriin;
+
+                rbtn6 = new RadioButton();
+                rbtn6.Checked = false;
+                rbtn6.Text = "sobitamise mäng";
+                rbtn6.Location = new Point(550, 420);
+                rbtn6.Click += sobitamise_mang;
+                
+
                 this.Controls.Add(rbtn1);
                 this.Controls.Add(rbtn2);
                 this.Controls.Add(rbtn3);
+                this.Controls.Add(rbtn4);
+                this.Controls.Add(rbtn5);
+                this.Controls.Add(rbtn6);
                 /*
                 //2. variant
                 int x = 20;
@@ -217,6 +240,24 @@ namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
                     MessageBox.Show("Oli sisestatud" + text);
                 }   
             }
+        }
+
+        private void sobitamise_mang(object? sender, EventArgs e)
+        {
+            Sobitamise_mang teineVorm = new Sobitamise_mang(200, 200);
+            teineVorm.Show();
+        }
+
+        private void matemaatika_viktoriin(object? sender, EventArgs e)
+        {
+            Matemaatika_viktoriin kolmasVorm = new Matemaatika_viktoriin(200, 200);
+            kolmasVorm.Show();
+        }
+
+        private void Pildivaatur(object? sender, EventArgs e)
+        {
+            Pildivaatur neljasVorm = new Pildivaatur(200, 200);
+            neljasVorm.Show();
         }
 
         private void Dg_RowHeaderMouseClick(object? sender, DataGridViewCellMouseEventArgs e)
