@@ -1,19 +1,22 @@
 ﻿using Microsoft.VisualBasic;
+using System;
+using System.Collections.Generic;
 using System.Data;
-using System.Diagnostics;
+using System.Drawing;
+using System.Windows.Forms;
 
 namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
 {
     public partial class StartVorm : Form
     {
-        List<string> elemendid = new List<string> { "Nupp", "Silt", "Pilt", "Märkeruut", "Raadionupp", "Tekstikast", "Loetelu","Tabel","Dialoogiaknad"};
-        List<string> rbtn_list = new List<string> { "Üks", "Kaks", "Kolm"};
+        List<string> elemendid = new List<string> { "Nupp", "Silt", "Pilt", "Märkeruut", "Raadionupp", "Tekstikast", "Loetelu", "Tabel", "Dialoogiaknad" };
+        List<string> rbtn_list = new List<string> { "Üks", "Kaks", "Kolm" };
         TreeView tree;
         Button btn;
         Label lbl;
         PictureBox pbox;
         CheckBox chk1, chk2;
-        RadioButton rbtn, rbtn1, rbtn2, rbtn3, rbtn4, rbtn5, rbtn6;
+        RadioButton rbtn1, rbtn2, rbtn3, rbtn4, rbtn5, rbtn6;
         TextBox txt;
         ListBox lb;
         DataSet ds;
@@ -26,7 +29,7 @@ namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
             this.Height = 500;
             this.Width = 700;
             this.Text = "Vorm elementidega";
-            this.BackColor = Color.White; // Начальный цвет фона
+            this.BackColor = Color.White;
 
             tree = new TreeView();
             tree.Dock = DockStyle.Left;
@@ -40,16 +43,14 @@ namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
             tree.Nodes.Add(tn);
             this.Controls.Add(tree);
 
-            //nupp - button - Кнопка
             btn = new Button();
             btn.Text = "Vajuta siia";
             btn.Height = 50;
             btn.Width = 70;
             btn.Location = new Point(150, 50);
             btn.Click += Btn_Click;
-            btn.DoubleClick += Btn_DoubleClick; // Событие двойного клика
+            btn.DoubleClick += Btn_DoubleClick;
 
-            //silt - label - Метка
             lbl = new Label();
             lbl.Text = "Aknade elemendid c# abil";
             lbl.Font = new Font("Arial", 30, FontStyle.Underline);
@@ -58,7 +59,6 @@ namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
             lbl.MouseHover += Lbl_MouseHover;
             lbl.MouseLeave += Lbl_MouseLeave;
 
-            // PictureBox
             pbox = new PictureBox();
             pbox.Size = new Size(60, 80);
             pbox.Location = new Point(150, btn.Height + lbl.Height + 5);
@@ -66,7 +66,9 @@ namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
             pbox.Image = Image.FromFile(@"..\..\..\Mona_Lisa.PNG");
             pbox.DoubleClick += Pbox_DoubleClick;
 
-
+            this.Controls.Add(btn);
+            this.Controls.Add(lbl);
+            this.Controls.Add(pbox);
         }
 
         private void Btn_DoubleClick(object sender, EventArgs e)
@@ -102,201 +104,143 @@ namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
             Pildivaatur teineVorm = new Pildivaatur(200, 200);
             teineVorm.Show();
         }
+
         private void Tree_AfterSelect(object sender, TreeViewEventArgs e)
         {
-            if (e.Node.Text == "Nupp")
+            if (e.Node.Text == "Nupp") Controls.Add(btn);
+            else if (e.Node.Text == "Silt") Controls.Add(lbl);
+            else if (e.Node.Text == "Pilt") Controls.Add(pbox);
+            else if (e.Node.Text == "Märkeruut") CreateCheckBoxes(e.Node);
+            else if (e.Node.Text == "Raadionupp") CreateRadioButtons();
+            else if (e.Node.Text == "Tekstikast") CreateTextBox();
+            else if (e.Node.Text == "Loetelu") CreateListBox();
+            else if (e.Node.Text == "Tabel") CreateDataGridView();
+            else if (e.Node.Text == "Dialoogiaknad") ShowDialog();
+        }
+
+        private void CreateCheckBoxes(TreeNode eNode)
+        {
+            chk1 = new CheckBox { Checked = false, Text = eNode.Text, Size = new Size(100, 20), Location = new Point(150, btn.Height + lbl.Height + pbox.Height + 10) };
+            chk1.CheckedChanged += Chk_CheckedChanged;
+
+            chk2 = new CheckBox { Checked = false, BackgroundImage = Image.FromFile(@"..\..\..\mona_lisa6.jpg"), BackgroundImageLayout = ImageLayout.Zoom, Size = new Size(100, 100), Location = new Point(150, btn.Height + lbl.Height + pbox.Height + chk1.Height + 15) };
+            chk2.CheckedChanged += Chk_CheckedChanged;
+
+            Controls.Add(chk1);
+            Controls.Add(chk2);
+        }
+
+        private void CreateRadioButtons()
+        {
+            rbtn1 = new RadioButton { Text = "Must teema", Location = new Point(150, 380) };
+            rbtn1.CheckedChanged += Rbtn_CheckedChanged;
+
+            rbtn2 = new RadioButton { Text = "Valge teema", Location = new Point(150, 400) };
+            rbtn2.CheckedChanged += Rbtn_CheckedChanged;
+
+            rbtn3 = new RadioButton { Text = "Roheline teema", Location = new Point(150, 420) };
+            rbtn3.CheckedChanged += Rbtn_CheckedChanged;
+
+            rbtn4 = new RadioButton { Text = "pildivaatur", Location = new Point(550, 380) };
+            rbtn4.Click += Pildivaatur;
+
+            rbtn5 = new RadioButton { Text = "matemaatika viktoriin", Location = new Point(550, 400) };
+            rbtn5.Click += matemaatika_viktoriin;
+
+            rbtn6 = new RadioButton { Text = "sobitamise mäng", Location = new Point(550, 420) };
+            rbtn6.Click += sobitamise_mang;
+
+            Controls.AddRange(new Control[] { rbtn1, rbtn2, rbtn3, rbtn4, rbtn5, rbtn6 });
+        }
+
+        private void CreateTextBox()
+        {
+            txt = new TextBox { Location = new Point(150 + btn.Width + 5, btn.Height), Font = new Font("Arial", 30), Width = 200 };
+            txt.TextChanged += Txt_TextChanged;
+            Controls.Add(txt);
+        }
+
+        private void CreateListBox()
+        {
+            lb = new ListBox();
+            foreach (string item in rbtn_list)
             {
-                Controls.Add(btn);
+                lb.Items.Add(item);
             }
-            else if (e.Node.Text == "Silt")
+            lb.Height = 50;
+            lb.Location = new Point(160 + btn.Width + txt.Width, btn.Height);
+            lb.SelectedIndexChanged += Lb_SelectedIndexChanged;
+            Controls.Add(lb);
+        }
+
+        private void CreateDataGridView()
+        {
+            ds = new DataSet("XML fail");
+            ds.ReadXml(@"..\..\..\menu.xml");
+            dg = new DataGridView { Location = new Point(160 + chk1.Width, lbl.Height + 10), DataSource = ds, DataMember = "food" };
+            dg.RowHeaderMouseClick += Dg_RowHeaderMouseClick;
+            Controls.Add(dg);
+        }
+
+        private void ShowDialog()
+        {
+            MessageBox.Show("Dialoog", "See on lihtne aken");
+            var vastus = MessageBox.Show("Sisestame andmed", "Kas tahad InputBoxi kasutada?", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (vastus == DialogResult.Yes)
             {
-                Controls.Add(lbl);
-            }
-            else if (e.Node.Text == "Pilt")
-            {
-                Controls.Add(pbox);
-            }
-            else if (e.Node.Text == "Märkeruut")
-            {
-                chk1 = new CheckBox();
-                chk1.Checked = false;
-                chk1.Text = e.Node.Text;
-                chk1.Size = new Size(chk1.Text.Length * 10, chk1.Size.Height);
-                chk1.Location = new Point(150, btn.Height + lbl.Height + pbox.Height + 10);
-                chk1.CheckedChanged += Chk_CheckedChanged;
-
-                chk2 = new CheckBox();
-                chk2.Checked = false;
-                chk2.BackgroundImage = Image.FromFile(@"..\..\..\mona_lisa6.jpg");
-                chk2.BackgroundImageLayout = ImageLayout.Zoom;
-                chk2.Size = new Size(100, 100);
-                chk2.Location = new Point(150, btn.Height + lbl.Height + pbox.Height + chk1.Height + 15);
-                chk2.CheckedChanged += Chk_CheckedChanged;
-
-                Controls.Add(chk1);
-                Controls.Add(chk2);
-            }
-            else if (e.Node.Text == "Raadionupp")
-            {
-                rbtn1 = new RadioButton();
-                rbtn1.Checked = false;
-                rbtn1.Text = "Must teema";
-                rbtn1.Location = new Point(150, 380);
-                rbtn1.CheckedChanged += new EventHandler(Rbtn_CheckedChanged);
-
-                rbtn2 = new RadioButton();
-                rbtn2.Checked = false;
-                rbtn2.Text = "Valge teema";
-                rbtn2.Location = new Point(150, 400);
-                rbtn2.CheckedChanged += new EventHandler(Rbtn_CheckedChanged);
-
-                rbtn3 = new RadioButton();
-                rbtn3.Checked = false;
-                rbtn3.Text = "Roheline teema";
-                rbtn3.Location = new Point(150, 420);
-                rbtn3.CheckedChanged += new EventHandler(Rbtn_CheckedChanged);
-
-                rbtn4 = new RadioButton();
-                rbtn4.Checked = false;
-                rbtn4.Text = "pildivaatur";
-                rbtn4.Location = new Point(550, 380);
-                rbtn4.Click += Pildivaatur;
-
-                rbtn5 = new RadioButton();
-                rbtn5.Checked = false;
-                rbtn5.Text = "matemaatika viktoriin";
-                rbtn5.Location = new Point(550, 400);
-                rbtn5.Click += matemaatika_viktoriin;
-
-                rbtn6 = new RadioButton();
-                rbtn6.Checked = false;
-                rbtn6.Text = "sobitamise mäng";
-                rbtn6.Location = new Point(550, 420);
-                rbtn6.Click += sobitamise_mang;
-                
-
-                this.Controls.Add(rbtn1);
-                this.Controls.Add(rbtn2);
-                this.Controls.Add(rbtn3);
-                this.Controls.Add(rbtn4);
-                this.Controls.Add(rbtn5);
-                this.Controls.Add(rbtn6);
-                /*
-                //2. variant
-                int x = 20;
-                for (int i = 0; i < rbtn_list.Count; i++)
-                {
-                    rbtn = new RadioButton();
-                    rbtn.Checked = false;
-                    rbtn.Text = rbtn_list[i];
-                    rbtn.Height = x;
-                    x = x + 20;
-                    rbtn.Location = new Point(150, btn.Height + lbl.Height + pbox.Height + chk1.Height + chk2.Height + rbtn.Height);
-                    rbtn.CheckedChanged += new EventHandler(Btn_CheckedChanged);
-
-                    Controls.Add(rbtn);
-                }
-                */
-            }
-            else if (e.Node.Text == "Tekstikast")
-            {
-                txt = new TextBox();
-                txt.Location = new Point(150 + btn.Width + 5, btn.Height);
-                txt.Font = new Font("Arial", 30);
-                txt.Width = 200;
-                txt.TextChanged += Txt_TextChanged;
-                Controls.Add(txt);
-            }
-            else if (e.Node.Text == "Loetelu")
-            {
-                lb = new ListBox();
-                foreach (string item in rbtn_list)
-                {
-                    lb.Items.Add(item);
-                }
-                lb.Height = 50;
-                lb.Location = new Point(160 + btn.Width + txt.Width, btn.Height);
-                lb.SelectedIndexChanged += Lb_SelectedIndexChanged;
-                Controls.Add(lb);
-            }
-            else if (e.Node.Text == "Tabel")
-            {
-                ds = new DataSet("XML fail");
-                ds.ReadXml(@"..\..\..\menu.xml");
-                dg = new DataGridView();
-                dg.Location = new Point(160 + chk1.Width, txt.Height + lbl.Height + 10);
-                dg.DataSource = ds;
-                dg.DataMember = "food";
-                dg.RowHeaderMouseClick += Dg_RowHeaderMouseClick;
-                Controls.Add(dg);
-            }
-            else if (e.Node.Text == "Dialoogiaknad")
-            {
-                MessageBox.Show("Dialoog", "See on lihtne aken");
-                var vastus = MessageBox.Show("Sisestame andmed", "Kas tahad InputBoxi kasutada?", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                if (vastus == DialogResult.Yes)
-                {
-                    string text = Interaction.InputBox("Sisesta midagi siia", "andmete sisestamine");
-                    MessageBox.Show("Oli sisestatud" + text);
-                }   
+                string text = Interaction.InputBox("Sisesta midagi siia", "andmete sisestamine");
+                MessageBox.Show("Oli sisestatud" + text);
             }
         }
 
-        private void sobitamise_mang(object? sender, EventArgs e)
+        private void sobitamise_mang(object sender, EventArgs e)
         {
             Sobitamise_mang teineVorm = new Sobitamise_mang(200, 200);
             teineVorm.Show();
         }
 
-        private void matemaatika_viktoriin(object? sender, EventArgs e)
+        private void matemaatika_viktoriin(object sender, EventArgs e)
         {
             Matemaatika_viktoriin kolmasVorm = new Matemaatika_viktoriin(200, 200);
             kolmasVorm.Show();
         }
 
-        private void Pildivaatur(object? sender, EventArgs e)
+        private void Pildivaatur(object sender, EventArgs e)
         {
             Pildivaatur neljasVorm = new Pildivaatur(200, 200);
             neljasVorm.Show();
         }
 
-        private void Dg_RowHeaderMouseClick(object? sender, DataGridViewCellMouseEventArgs e)
+        private void Dg_RowHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
         {
-            txt.Text= dg.Rows[e.RowIndex].Cells[0].Value.ToString()+" hind "+ dg.Rows[e.RowIndex].Cells[1].Value.ToString();
+            txt.Text = dg.Rows[e.RowIndex].Cells[0].Value.ToString() + " hind " + dg.Rows[e.RowIndex].Cells[1].Value.ToString();
         }
 
-        private void Lb_SelectedIndexChanged(object? sender, EventArgs e)
+        private void Lb_SelectedIndexChanged(object sender, EventArgs e)
         {
             switch (lb.SelectedIndex)
             {
                 case 0: tree.BackColor = Color.MistyRose; break;
-                case 1:tree.BackColor = Color.SlateGray; break;
-                case 2:tree.BackColor= Color.Crimson; break;
+                case 1: tree.BackColor = Color.SlateGray; break;
+                case 2: tree.BackColor = Color.Crimson; break;
             }
         }
 
-        private void Txt_TextChanged(object? sender, EventArgs e)
+        private void Txt_TextChanged(object sender, EventArgs e)
         {
             lbl.Text = txt.Text;
         }
 
-        private void Btn_CheckedChanged(object? sender, EventArgs e)
-        {
-            RadioButton rb = (RadioButton)sender;
-            lbl.Text = rb.Text;
-        }
-
-        private void Rbtn_CheckedChanged(object? sender, EventArgs e)
+        private void Rbtn_CheckedChanged(object sender, EventArgs e)
         {
             if (rbtn1.Checked)
             {
                 this.BackColor = Color.Black;
                 this.ForeColor = Color.White;
-                
             }
             else if (rbtn2.Checked)
             {
-                this.BackColor = Color.White ;
+                this.BackColor = Color.White;
                 this.ForeColor = Color.Black;
             }
             else if (rbtn3.Checked)
@@ -318,7 +262,7 @@ namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
                 lbl.BorderStyle = BorderStyle.Fixed3D;
                 pbox.BorderStyle = BorderStyle.None;
             }
-            else if (chk2.Checked) 
+            else if (chk2.Checked)
             {
                 pbox.BorderStyle = BorderStyle.Fixed3D;
                 lbl.BorderStyle = BorderStyle.None;
