@@ -142,6 +142,7 @@ namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
             rbtn3.CheckedChanged += Rbtn_CheckedChanged;
 
             rbtn4 = new RadioButton { Text = "pildivaatur", Location = new Point(550, 380) };
+
             rbtn4.Click += Pildivaatur;
 
             rbtn5 = new RadioButton { Text = "matemaatika viktoriin", Location = new Point(550, 400) };
@@ -207,7 +208,10 @@ namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
 
         private void Pildivaatur(object sender, EventArgs e)
         {
-            Pildivaatur neljasVorm = new Pildivaatur(200, 200);
+            int w = 700;
+            int h = 500;
+
+            Pildivaatur neljasVorm = new Pildivaatur(w, h);
             neljasVorm.Show();
         }
 
