@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Drawing;
-using System.IO; // Для работы с файлами
+using System.IO;
 using System.Windows.Forms;
 
 namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
@@ -13,24 +13,27 @@ namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
         Label timesLeftLabel, timesRightLabel;
         Label dividedLeftLabel, dividedRightLabel;
         NumericUpDown sum, difference, product, quotient;
-        Button startButton, exitButton;
+        Button startButton, exitButton, endQuizButton; // Uus nupp
         Button checkPlusButton, checkMinusButton, checkTimesButton, checkDividedButton;
         Button showPlusAnswerButton, showMinusAnswerButton, showTimesAnswerButton, showDividedAnswerButton;
         System.Windows.Forms.Timer quizTime;
-        ListBox resultsListBox; // Список для отображения результатов теста
+        ListBox resultsListBox;
+        ComboBox difficultyComboBox;
         int timeLeft;
 
         int plusAnswer, minusAnswer, timesAnswer, dividedAnswer;
-        int correctAnswers, incorrectAnswers; // Счетчики правильных и неправильных ответов
+        int correctAnswers, incorrectAnswers;
+        int score;
+        private DateTime startTime;
 
         public Matemaatika_viktoriin(int h, int w)
         {
             this.Height = h;
-            this.Width = w; 
-            this.Text = "Math Quiz";
+            this.Width = w;
+            this.Text = "Matemaatika viktoriin";
 
             timeLabel = new Label();
-            timeLabel.Text = "Time Left: ";
+            timeLabel.Text = "Jääk: ";
             timeLabel.Font = new Font("Arial", 20, FontStyle.Bold);
             timeLabel.Size = new Size(200, 50);
             timeLabel.Location = new Point(50, 20);
@@ -41,28 +44,45 @@ namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
             CreateMathQuestion(out timesLeftLabel, out timesRightLabel, out product, "×", 50, 200, out checkTimesButton, out showTimesAnswerButton);
             CreateMathQuestion(out dividedLeftLabel, out dividedRightLabel, out quotient, "÷", 50, 250, out checkDividedButton, out showDividedAnswerButton);
 
-            // Start button
+            // Raskusaste
+            difficultyComboBox = new ComboBox();
+            difficultyComboBox.Items.Add("Lihtne");
+            difficultyComboBox.Items.Add("Keskmine");
+            difficultyComboBox.Items.Add("Raske");
+            difficultyComboBox.SelectedIndex = 0; // Vaikimisi "Lihtne"
+            difficultyComboBox.Location = new Point(200, 350);
+            Controls.Add(difficultyComboBox);
+
+            // Alusta nupp
             startButton = new Button();
-            startButton.Text = "Start Quiz";
+            startButton.Text = "Alusta viktoriini";
             startButton.Size = new Size(100, 50);
             startButton.Location = new Point(200, 400);
             startButton.Click += new EventHandler(StartButton_Click);
             Controls.Add(startButton);
 
-            // Exit button
+            // Lõpeta viktoriin nupp
+            endQuizButton = new Button();
+            endQuizButton.Text = "Lõpeta viktoriin varem";
+            endQuizButton.Size = new Size(150, 50);
+            endQuizButton.Location = new Point(350, 400);
+            endQuizButton.Click += new EventHandler(EndQuizButton_Click);
+            Controls.Add(endQuizButton);
+
+            // Välju nupp
             exitButton = new Button();
-            exitButton.Text = "Exit";
+            exitButton.Text = "Välju";
             exitButton.Size = new Size(100, 50);
-            exitButton.Location = new Point(350, 400);
+            exitButton.Location = new Point(500, 400);
             exitButton.Click += new EventHandler(ExitButton_Click);
             Controls.Add(exitButton);
 
-            // Timer
+            // Taimer
             quizTime = new System.Windows.Forms.Timer();
-            quizTime.Interval = 1000; // 1 second
+            quizTime.Interval = 1000; // 1 sekund
             quizTime.Tick += new EventHandler(Timer_Tick);
 
-            // ListBox for results
+            // Tulemuste ListBox
             resultsListBox = new ListBox();
             resultsListBox.Location = new Point(500, 100);
             resultsListBox.Size = new Size(250, 300);
@@ -96,37 +116,34 @@ namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
             answerBox.Size = new Size(100, 50);
             answerBox.Location = new Point(x + 200, y);
             answerBox.Minimum = -100;
-            answerBox.Maximum = 100;
+            answerBox.Maximum = 5000;
             Controls.Add(answerBox);
 
-            // Button to check answer
             checkButton = new Button();
-            checkButton.Text = "Check";
+            checkButton.Text = "Kontrolli";
             checkButton.Size = new Size(75, 30);
             checkButton.Location = new Point(x + 310, y + 10);
             Controls.Add(checkButton);
 
-            // Button to show correct answer, hidden initially
             showAnswerButton = new Button();
-            showAnswerButton.Text = "Show Answer";
+            showAnswerButton.Text = "Näita vastust";
             showAnswerButton.Size = new Size(100, 30);
             showAnswerButton.Location = new Point(x + 390, y + 10);
-            showAnswerButton.Visible = false; // Hidden initially
+            showAnswerButton.Visible = false;
             Controls.Add(showAnswerButton);
         }
 
         private void StartButton_Click(object sender, EventArgs e)
         {
-            // Reset score counters
+            score = 0;
             correctAnswers = 0;
             incorrectAnswers = 0;
 
-            // Clear the results list box
             resultsListBox.Items.Clear();
 
             Random random = new Random();
+            int range = GetNumberRange();
 
-            // Reset visibility of the "Show Answer" buttons and clear previous answers
             showPlusAnswerButton.Visible = false;
             showMinusAnswerButton.Visible = false;
             showTimesAnswerButton.Visible = false;
@@ -137,40 +154,50 @@ namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
             product.Value = 0;
             quotient.Value = 0;
 
-            // Generate and calculate answers for questions
-            int plusLeft = random.Next(1, 10);
-            int plusRight = random.Next(1, 10);
+            int plusLeft = random.Next(1, range);
+            int plusRight = random.Next(1, range);
             plusLeftLabel.Text = plusLeft.ToString();
             plusRightLabel.Text = plusRight.ToString();
             plusAnswer = plusLeft + plusRight;
 
-            int minusLeft = random.Next(1, 10);
-            int minusRight = random.Next(1, minusLeft + 1); // Ensure positive results
+            int minusLeft = random.Next(1, range);
+            int minusRight = random.Next(1, minusLeft + 1);
             minusLeftLabel.Text = minusLeft.ToString();
             minusRightLabel.Text = minusRight.ToString();
             minusAnswer = minusLeft - minusRight;
 
-            int timesLeft = random.Next(1, 10);
-            int timesRight = random.Next(1, 10);
+            int timesLeft = random.Next(1, range);
+            int timesRight = random.Next(1, range);
             timesLeftLabel.Text = timesLeft.ToString();
             timesRightLabel.Text = timesRight.ToString();
             timesAnswer = timesLeft * timesRight;
 
-            int dividedLeft = random.Next(1, 10);
-            int dividedRight = random.Next(1, dividedLeft + 1); // Ensure whole number division
-            dividedLeftLabel.Text = (dividedLeft * dividedRight).ToString(); // Generate correct dividend
+            int dividedLeft = random.Next(1, range);
+            int dividedRight = random.Next(1, dividedLeft + 1);
+            dividedLeftLabel.Text = (dividedLeft * dividedRight).ToString();
             dividedRightLabel.Text = dividedRight.ToString();
             dividedAnswer = dividedLeft * dividedRight / dividedRight;
 
-            timeLeft = 30; // 30 seconds for the quiz
-            timeLabel.Text = "Time Left: " + timeLeft + " seconds";
+            timeLeft = 30;
+            timeLabel.Text = "Jääk: " + timeLeft + " sekundit";
             quizTime.Start();
+            startTime = DateTime.Now;
 
-            // Attach check button event handlers
             checkPlusButton.Click += (s, args) => CheckAnswer(sum, plusAnswer, showPlusAnswerButton);
             checkMinusButton.Click += (s, args) => CheckAnswer(difference, minusAnswer, showMinusAnswerButton);
             checkTimesButton.Click += (s, args) => CheckAnswer(product, timesAnswer, showTimesAnswerButton);
             checkDividedButton.Click += (s, args) => CheckAnswer(quotient, dividedAnswer, showDividedAnswerButton);
+        }
+
+        private int GetNumberRange()
+        {
+            switch (difficultyComboBox.SelectedItem.ToString())
+            {
+                case "Lihtne": return 10;
+                case "Keskmine": return 20;
+                case "Raske": return 50;
+                default: return 10;
+            }
         }
 
         private void Timer_Tick(object sender, EventArgs e)
@@ -178,13 +205,14 @@ namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
             if (timeLeft > 0)
             {
                 timeLeft--;
-                timeLabel.Text = "Time Left: " + timeLeft + " seconds";
+                timeLabel.Text = "Jääk: " + timeLeft + " sekundit";
             }
             else
             {
                 quizTime.Stop();
                 CheckAllAnswers();
-                MessageBox.Show("Time's up!");
+                TimeSpan duration = DateTime.Now - startTime;
+                MessageBox.Show($"Aeg on läbi! Sa veetsid: {duration.TotalSeconds} sekundit.");
             }
         }
 
@@ -192,19 +220,20 @@ namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
         {
             if ((int)answerBox.Value == correctAnswer)
             {
-                MessageBox.Show("Correct!");
-                LogResult("Correct");
+                MessageBox.Show("Õige!");
+                LogResult("Õige");
                 correctAnswers++;
+                score += 10;
             }
             else
             {
-                MessageBox.Show("Incorrect!");
-                showAnswerButton.Visible = true; // Show the answer button if incorrect
-                showAnswerButton.Click += (s, args) => MessageBox.Show("The correct answer is: " + correctAnswer);
+                MessageBox.Show("Vale!");
+                showAnswerButton.Visible = true;
+                showAnswerButton.Click += (s, args) => MessageBox.Show("Õige vastus on: " + correctAnswer);
                 incorrectAnswers++;
+                score -= 5;
             }
 
-            // Update results list
             UpdateResultsList();
         }
 
@@ -215,16 +244,23 @@ namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
             CheckAnswer(product, timesAnswer, showTimesAnswerButton);
             CheckAnswer(quotient, dividedAnswer, showDividedAnswerButton);
 
-            // Final update of the results list
+            string results = "Teie vastused:\n";
+            results += $"Suumerimine: {sum.Value} (Õige: {plusAnswer})\n";
+            results += $"Lahetumine: {difference.Value} (Õige: {minusAnswer})\n";
+            results += $"Korrutamine: {product.Value} (Õige: {timesAnswer})\n";
+            results += $"Jagamine: {quotient.Value} (Õige: {dividedAnswer})\n";
+
+            MessageBox.Show(results);
             UpdateResultsList();
         }
 
         private void UpdateResultsList()
         {
             resultsListBox.Items.Clear();
-            resultsListBox.Items.Add("Correct Answers: " + correctAnswers);
-            resultsListBox.Items.Add("Incorrect Answers: " + incorrectAnswers);
-            LogResult("Test completed: " + correctAnswers + " correct, " + incorrectAnswers + " incorrect");
+            resultsListBox.Items.Add("Õiged vastused: " + correctAnswers);
+            resultsListBox.Items.Add("Vale vastused: " + incorrectAnswers);
+            resultsListBox.Items.Add("Skoor: " + score);
+            LogResult("Viktoriin lõpetatud: " + correctAnswers + " õiget, " + incorrectAnswers + " vale, Skoor: " + score);
         }
 
         private void LogResult(string result)
@@ -236,11 +272,16 @@ namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
             }
         }
 
+        private void EndQuizButton_Click(object sender, EventArgs e)
+        {
+            quizTime.Stop();
+            CheckAllAnswers();
+            MessageBox.Show("Viktoriin lõpetatud.");
+        }
+
         private void ExitButton_Click(object sender, EventArgs e)
         {
             this.Close();
         }
-
-        
     }
 }
