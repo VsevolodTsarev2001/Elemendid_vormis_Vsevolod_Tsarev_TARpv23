@@ -1,187 +1,249 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
 {
     public partial class Sobitamise_mang : Form
     {
-        List<int> numbers = new List<int> { 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6 };
-        string firstChoice;
-        string secondChoice;
-        int tries;
-        List<PictureBox> pictures = new List<PictureBox>();
+        enum Raskusaste { Lihtne, Keskmine, Raskem }
+        private Raskusaste valitudRaskusaste = Raskusaste.Lihtne;
+        List<int> numbrid = new List<int>();
+        System.Drawing.Image esimeneValik;
+        System.Drawing.Image teineValik;
+        int katsed;
+        List<PictureBox> pildid = new List<PictureBox>();
         PictureBox picA;
         PictureBox picB;
-        Label lblStatus;
-        Label lblTimeLeft;
-        System.Windows.Forms.Timer GameTimer;
-        int totalTime = 60;
-        int countDownTime;
-        bool gameOver = false;
+        Label lblOlek;
+        Label lblAegJäänud;
+        System.Windows.Forms.Timer MänguKell;
+        int koguaeg;
+        int allahindlusaeg;
+        bool mängLõppenud = false;
+
+        // Images list to store your actual images instead of file paths
+        List<Image> pildiKogum = new List<Image>();
+
         public Sobitamise_mang(int w, int h)
         {
-            InitializeComponent(); // Инициализация компонентов
-            this.ClientSize = new Size(w, h); // Устанавливаем размер окна
-            GameTimer = new System.Windows.Forms.Timer(); // Инициализация таймера
-            GameTimer.Interval = 1000; // Установка интервала в 1 секунду
-            GameTimer.Tick += TimerEvent; // Подписка на событие таймера
+            InitializeComponent();
+            this.ClientSize = new Size(w, h);
+            MänguKell = new System.Windows.Forms.Timer();
+            MänguKell.Interval = 1000;
+            MänguKell.Tick += KellEvent;
 
-            lblStatus = new Label
+            lblOlek = new Label
             {
                 Location = new Point(20, 200),
                 Size = new Size(200, 30)
             };
-            lblTimeLeft = new Label
+            lblAegJäänud = new Label
             {
                 Location = new Point(20, 230),
                 Size = new Size(200, 30)
             };
-            this.Controls.Add(lblStatus);
-            this.Controls.Add(lblTimeLeft);
+            this.Controls.Add(lblOlek);
+            this.Controls.Add(lblAegJäänud);
 
-            LoadPictures(); // Загружаем картинки
+            AlustaRaskusastmeValijat();
+            LaePildid();  // Загрузка изображений
         }
 
-
-        private void TimerEvent(object sender, EventArgs e)
+        private void AlustaRaskusastmeValijat()
         {
-            countDownTime--;
-            lblTimeLeft.Text = "Time Left: " + countDownTime;
-            if (countDownTime < 1)
+            ComboBox raskusastmeValija = new ComboBox
             {
-                GameOver("Time's Up, You Lose");
-                foreach (PictureBox x in pictures)
+                Location = new Point(20, 170),
+                Size = new Size(120, 30)
+            };
+            raskusastmeValija.Items.AddRange(Enum.GetNames(typeof(Raskusaste)));
+            raskusastmeValija.SelectedIndex = 0; // По умолчанию Lihtne
+            raskusastmeValija.SelectedIndexChanged += RaskusastmeValija_SelectedIndexChanged;
+            this.Controls.Add(raskusastmeValija);
+        }
+
+        private void RaskusastmeValija_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            valitudRaskusaste = (Raskusaste)Enum.Parse(typeof(Raskusaste), ((ComboBox)sender).SelectedItem.ToString());
+            TaastaMäng();  // Перезапуск игры при изменении сложности
+        }
+
+        private void KellEvent(object sender, EventArgs e)
+        {
+            allahindlusaeg--;
+            lblAegJäänud.Text = "Aeg Jäänud: " + allahindlusaeg;
+            if (allahindlusaeg < 1)
+            {
+                MängLõppenud("Aeg on läbi, kaotasite");
+                foreach (PictureBox x in pildid)
                 {
                     if (x.Tag != null)
                     {
-                        x.Image = Image.FromFile(@"..\..\..\" + (string)x.Tag + ".png");
+                        x.Image = (Image)x.Tag; // Восстановление изображения при завершении
                     }
                 }
             }
         }
 
-        private void LoadPictures()
+        private void LaePildid()
         {
-            int leftPos = 20;
-            int topPos = 20;
-            int rows = 0;
-            for (int i = 0; i < 12; i++)
+            // Загружаем картинки сразу в список изображений
+            pildiKogum = new List<Image>
             {
-                PictureBox newPic = new PictureBox();
-                newPic.Height = 50;
-                newPic.Width = 50;
-                newPic.BackColor = Color.LightGray;
-                newPic.SizeMode = PictureBoxSizeMode.StretchImage;
-                newPic.Click += NewPic_Click;
-                pictures.Add(newPic);
-                if (rows < 4)
+                Image.FromFile(@"..\..\..\css.png"),
+                Image.FromFile(@"..\..\..\java.png"),
+                Image.FromFile(@"..\..\..\py.png"),
+                Image.FromFile(@"..\..\..\sql.png"),
+                Image.FromFile(@"..\..\..\swift.png")
+            };
+
+            // Очистка существующих PictureBoxes
+            pildid.Clear();
+            int paarideArv = SaaPaarideArv(valitudRaskusaste);
+            numbrid = Enumerable.Range(0, paarideArv).SelectMany(i => new[] { i, i }).ToList();
+            Segage(numbrid);
+
+            int vasakPos = 20;
+            int üleminePos = 20;
+            int read = 0;
+
+            for (int i = 0; i < numbrid.Count; i++)
+            {
+                PictureBox uusPic = new PictureBox
                 {
-                    rows++;
-                    newPic.Left = leftPos;
-                    newPic.Top = topPos;
-                    this.Controls.Add(newPic);
-                    leftPos += 60;
-                }
-                if (rows == 4)
+                    Height = 50,
+                    Width = 50,
+                    BackColor = Color.LightGray,
+                    SizeMode = PictureBoxSizeMode.StretchImage
+                };
+                uusPic.Click += UusPic_Click;
+                pildid.Add(uusPic);
+                uusPic.Left = vasakPos;
+                uusPic.Top = üleminePos;
+                this.Controls.Add(uusPic);
+
+                vasakPos += 60;
+                read++;
+                if (read == 4)
                 {
-                    leftPos = 20;
-                    topPos += 60;
-                    rows = 0;
+                    vasakPos = 20;
+                    üleminePos += 60;
+                    read = 0;
                 }
             }
-            RestartGame();
+
+            TaastaMäng();  // Восстановление состояния игры
         }
 
-        private void NewPic_Click(object sender, EventArgs e)
+        private int SaaPaarideArv(Raskusaste raskusaste)
         {
+            return raskusaste switch
             {
-                if (gameOver)
-                    // Не регистрировать клик, если игра окончена
-                    return;
+                Raskusaste.Lihtne => 5,  // 6 пар
+                Raskusaste.Keskmine => 8,  // 8 пар
+                Raskusaste.Raskem => 10,  // 10 пар
+                _ => 5,
+            };
+        }
+
+        private void Segage(List<int> nimekiri)
+        {
+            Random rng = new Random();
+            int n = nimekiri.Count;
+            while (n > 1)
+            {
+                int k = rng.Next(n--);
+                int temp = nimekiri[n];
+                nimekiri[n] = nimekiri[k];
+                nimekiri[k] = temp;
             }
-            if (firstChoice == null)
+        }
+
+        private void TaastaMäng()
+        {
+            Segage(numbrid);
+            for (int i = 0; i < pildid.Count; i++)
+            {
+                pildid[i].Image = null;
+                pildid[i].Tag = pildiKogum[numbrid[i]];  // Связываем картинку с PictureBox через Tag
+            }
+
+            katsed = 0;
+            lblOlek.Text = "Mismatched: " + katsed + " korda.";
+            lblAegJäänud.Text = "Aeg Jäänud: " + koguaeg;
+            mängLõppenud = false;
+            allahindlusaeg = koguaeg;
+            koguaeg = 60;  // Сброс таймера на 60 секунд
+            MänguKell.Start();
+        }
+
+        private void UusPic_Click(object sender, EventArgs e)
+        {
+            if (mängLõppenud)
+                return;
+
+            if (esimeneValik == null)
             {
                 picA = sender as PictureBox;
                 if (picA.Tag != null && picA.Image == null)
                 {
-                    picA.Image = Image.FromFile(@"..\..\..\" + (string)picA.Tag + ".png");
-                    firstChoice = (string)picA.Tag;
+                    picA.Image = (Image)picA.Tag;  // Загружаем изображение из Tag
+                    esimeneValik = (Image)picA.Tag;
                 }
             }
-            else if (secondChoice == null)
+            else if (teineValik == null)
             {
                 picB = sender as PictureBox;
                 if (picB.Tag != null && picB.Image == null)
                 {
-                    picB.Image = Image.FromFile(@"..\..\..\" + (string)picB.Tag + ".png");
-                    secondChoice = (string)picB.Tag;
+                    picB.Image = (Image)picB.Tag;  // Загружаем изображение из Tag
+                    teineValik = (Image)picB.Tag;
                 }
             }
             else
             {
-                CheckPictures(picA, picB);
+                KontrolliPilti(picA, picB);
             }
         }
 
-        private void RestartGame()
+        private void KontrolliPilti(PictureBox A, PictureBox B)
         {
-            // Перемешиваем оригинальный список
-            var randomList = numbers.OrderBy(x => Guid.NewGuid()).ToList();
-            // Назначаем перемешанный список оригинальному
-            numbers = randomList;
-            for (int i = 0; i < pictures.Count; i++)
-            {
-                pictures[i].Image = null;
-                pictures[i].Tag = numbers[i].ToString();
-            }
-            tries = 0;
-            lblStatus.Text = "Mismatched: " + tries + " times.";
-            lblTimeLeft.Text = "Time Left: " + totalTime;
-            gameOver = false;
-            countDownTime = totalTime;
-            GameTimer.Start(); // Запуск таймера
-        }
-
-        private void CheckPictures(PictureBox A, PictureBox B)
-        {
-            if (firstChoice == secondChoice)
+            if (esimeneValik == teineValik)
             {
                 A.Tag = null;
                 B.Tag = null;
             }
             else
             {
-                tries++;
-                lblStatus.Text = "Mismatched " + tries + " times.";
+                katsed++;
+                lblOlek.Text = "Mismatched " + katsed + " korda.";
             }
-            firstChoice = null;
-            secondChoice = null;
-            foreach (PictureBox pics in pictures.ToList())
+            esimeneValik = null;
+            teineValik = null;
+
+            foreach (PictureBox pics in pildid.ToList())
             {
                 if (pics.Tag != null)
                 {
                     pics.Image = null;
                 }
             }
-            // Проверяем, решены ли все элементы
-            if (pictures.All(o => o.Tag == null))
-            {
-                GameOver("Great Work, You Win!!!!");
+
+            if (pildid.All(o => o.Tag == null))
+            {   
+                MängLõppenud("Suurepärane töö, võitsite!!!!");
             }
         }
 
-        private void GameOver(string msg)
+        private void MängLõppenud(string msg)
         {
-            GameTimer.Stop(); // Остановка таймера
-            gameOver = true; // Игра окончена
-            MessageBox.Show(msg + " Click Restart to Play Again.", "Gleb Says: ");
+            MänguKell.Stop();
+            mängLõppenud = true;
+            MessageBox.Show(msg + " Kliki Taasta, et uuesti mängida.");
         }
     }
 }
