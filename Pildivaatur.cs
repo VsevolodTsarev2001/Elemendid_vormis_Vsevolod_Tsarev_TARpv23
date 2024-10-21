@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic; // Added for Stack
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Windows.Forms;
@@ -9,9 +10,10 @@ namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
     {
         CheckBox chb1;
         PictureBox pictureBox;
-        Button btnOpen, btnSave, btnClear, btnBackground, btnClose, btnRotate, btnGrayscale;
+        Button btnOpen, btnSave, btnClear, btnBackground, btnClose, btnRotateCW, btnRotateCCW, btnGrayscale, btnUndo;
         TrackBar opacityTrackBar;
         ColorDialog colorDialog1;
+        Stack<Bitmap> undoStack; // Added for undo functionality
 
         public Pildivaatur(int w, int h)
         {
@@ -21,10 +23,9 @@ namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
             this.Text = "Pildivaatur";
             this.BackColor = Color.White;
 
-            // Инициализация ColorDialog
             colorDialog1 = new ColorDialog();
+            undoStack = new Stack<Bitmap>(); // Initialize undo stack
 
-            // Создаем PictureBox
             pictureBox = new PictureBox();
             pictureBox.Dock = DockStyle.Fill;
             pictureBox.SizeMode = PictureBoxSizeMode.Zoom;
@@ -34,13 +35,11 @@ namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
             flp.Dock = DockStyle.Bottom;
             this.Controls.Add(flp);
 
-            // Создаем кнопку для открытия файла
             btnOpen = new Button();
             btnOpen.Text = "Avatud pilt";
             btnOpen.Click += BtnOpen_Click;
             flp.Controls.Add(btnOpen);
 
-            // Создаем кнопку для сохранения изображения
             btnSave = new Button();
             btnSave.Text = "Salvesta pilt";
             btnSave.Click += SaveButton_Click;
@@ -61,25 +60,31 @@ namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
             btnClose.Click += CloseButton_Click;
             flp.Controls.Add(btnClose);
 
-            // Кнопка поворота изображения
-            btnRotate = new Button();
-            btnRotate.Text = "Pööra 90°";
-            btnRotate.Click += RotateButton_Click;
-            flp.Controls.Add(btnRotate);
+            btnRotateCW = new Button();
+            btnRotateCW.Text = "Pööra 90° CW";
+            btnRotateCW.Click += RotateClockwiseButton_Click;
+            flp.Controls.Add(btnRotateCW);
 
-            // Кнопка черно-белого фильтра
+            btnRotateCCW = new Button();
+            btnRotateCCW.Text = "Pööra 90° CCW";
+            btnRotateCCW.Click += RotateCounterClockwiseButton_Click;
+            flp.Controls.Add(btnRotateCCW);
+
             btnGrayscale = new Button();
             btnGrayscale.Text = "Halltoon";
             btnGrayscale.Click += GrayscaleButton_Click;
             flp.Controls.Add(btnGrayscale);
 
-            // Инициализация CheckBox
+            btnUndo = new Button();
+            btnUndo.Text = "Tühista";
+            btnUndo.Click += UndoButton_Click;
+            flp.Controls.Add(btnUndo);
+
             chb1 = new CheckBox();
             chb1.Text = "Stretch Image";
             chb1.CheckedChanged += CheckBox1_CheckedChanged;
             flp.Controls.Add(chb1);
 
-            // Инициализация TrackBar для регулировки прозрачности
             opacityTrackBar = new TrackBar();
             opacityTrackBar.Minimum = 0;
             opacityTrackBar.Maximum = 100;
@@ -98,13 +103,13 @@ namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
         {
             using (OpenFileDialog openFileDialog = new OpenFileDialog())
             {
-                openFileDialog.InitialDirectory = "c:\\"; // Начальная директория
-                openFileDialog.Filter = "Image Files|*.jpg;*.jpeg;*.png;*.bmp;*.gif"; // Фильтр файлов
-                openFileDialog.Title = "Valige pildi fail"; // Заголовок диалога
+                openFileDialog.InitialDirectory = "c:\\";
+                openFileDialog.Filter = "Image Files|*.jpg;*.jpeg;*.png;*.bmp;*.gif";
+                openFileDialog.Title = "Valige pildi fail";
 
                 if (openFileDialog.ShowDialog() == DialogResult.OK)
                 {
-                    // Загружаем выбранное изображение
+                    SaveCurrentImage(); // Save current image before opening a new one
                     pictureBox.Image = new Bitmap(openFileDialog.FileName);
                 }
             }
@@ -132,37 +137,42 @@ namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
 
         private void ClearButton_Click(object sender, EventArgs e)
         {
-            // Очистить изображение.
             pictureBox.Image = null;
+            undoStack.Clear(); // Clear the undo stack
         }
 
         private void BackgroundButton_Click(object sender, EventArgs e)
         {
-            // Показать диалог выбора цвета. Если пользователь нажимает OK, изменить
-            // фон PictureBox на выбранный цвет.
             if (colorDialog1.ShowDialog() == DialogResult.OK)
                 pictureBox.BackColor = colorDialog1.Color;
         }
 
         private void CloseButton_Click(object sender, EventArgs e)
         {
-            // Закрыть форму.
             this.Close();
         }
 
         private void CheckBox1_CheckedChanged(object sender, EventArgs e)
         {
-            // Если пользователь выбирает чекбокс Stretch, 
-            // изменить свойство SizeMode PictureBox на "Stretch". Если чекбокс очищен, 
-            // изменить на "Normal".
             pictureBox.SizeMode = chb1.Checked ? PictureBoxSizeMode.StretchImage : PictureBoxSizeMode.Normal;
         }
 
-        private void RotateButton_Click(object sender, EventArgs e)
+        private void RotateClockwiseButton_Click(object sender, EventArgs e)
         {
             if (pictureBox.Image != null)
             {
+                SaveCurrentImage(); // Save the current image before rotating
                 pictureBox.Image.RotateFlip(RotateFlipType.Rotate90FlipNone);
+                pictureBox.Refresh();
+            }
+        }
+
+        private void RotateCounterClockwiseButton_Click(object sender, EventArgs e)
+        {
+            if (pictureBox.Image != null)
+            {
+                SaveCurrentImage(); // Save the current image before rotating
+                pictureBox.Image.RotateFlip(RotateFlipType.Rotate270FlipNone);
                 pictureBox.Refresh();
             }
         }
@@ -171,7 +181,29 @@ namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
         {
             if (pictureBox.Image != null)
             {
+                SaveCurrentImage(); // Save the current image before applying grayscale
                 pictureBox.Image = ApplyGrayscale(new Bitmap(pictureBox.Image));
+            }
+        }
+
+        private void UndoButton_Click(object sender, EventArgs e)
+        {
+            if (undoStack.Count > 0)
+            {
+                pictureBox.Image = undoStack.Pop(); // Pop the last image from the stack
+                pictureBox.Refresh();
+            }
+            else
+            {
+                MessageBox.Show("Ei ole rohkem tühistamist.");
+            }
+        }
+
+        private void SaveCurrentImage()
+        {
+            if (pictureBox.Image != null)
+            {
+                undoStack.Push(new Bitmap(pictureBox.Image)); // Push the current image to the stack
             }
         }
 
@@ -196,7 +228,7 @@ namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
             using (Graphics g = Graphics.FromImage(result))
             {
                 ColorMatrix matrix = new ColorMatrix();
-                matrix.Matrix33 = opacity; // Установка прозрачности
+                matrix.Matrix33 = opacity;
                 using (ImageAttributes attrs = new ImageAttributes())
                 {
                     attrs.SetColorMatrix(matrix);

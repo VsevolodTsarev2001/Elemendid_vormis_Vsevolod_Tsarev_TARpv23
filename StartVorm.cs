@@ -9,7 +9,7 @@ namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
 {
     public partial class StartVorm : Form
     {
-        List<string> elemendid = new List<string> { "Nupp", "Silt", "Pilt", "Märkeruut", "Raadionupp", "Tekstikast", "Loetelu", "Tabel", "Dialoogiaknad" };
+        List<string> elemendid = new List<string> { "Nupp", "Silt", "Pilt", "Märkeruut", "Raadionupp", "Tekstikast", "Loetelu", "Tabel", "Dialoogiaknad", "Vormid"};
         List<string> rbtn_list = new List<string> { "Üks", "Kaks", "Kolm" };
         TreeView tree;
         Button btn;
@@ -116,6 +116,7 @@ namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
             else if (e.Node.Text == "Loetelu") CreateListBox();
             else if (e.Node.Text == "Tabel") CreateDataGridView();
             else if (e.Node.Text == "Dialoogiaknad") ShowDialog();
+            else if (e.Node.Text == "Vormid") ShowVormid();
         }
 
         private void CreateCheckBoxes(TreeNode eNode)
@@ -141,6 +142,9 @@ namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
             rbtn3 = new RadioButton { Text = "Roheline teema", Location = new Point(150, 420) };
             rbtn3.CheckedChanged += Rbtn_CheckedChanged;
 
+        }
+        private void ShowVormid()
+        { 
             rbtn4 = new RadioButton { Text = "pildivaatur", Location = new Point(550, 380) };
 
             rbtn4.Click += Pildivaatur;
