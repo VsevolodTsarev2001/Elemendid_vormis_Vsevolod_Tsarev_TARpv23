@@ -9,241 +9,355 @@ namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
 {
     public partial class Sobitamise_mang : Form
     {
-        enum Raskusaste { Lihtne, Keskmine, Raskem }
-        private Raskusaste valitudRaskusaste = Raskusaste.Lihtne;
-        List<int> numbrid = new List<int>();
-        System.Drawing.Image esimeneValik;
-        System.Drawing.Image teineValik;
-        int katsed;
+        // Список чисел для карт (каждое число дважды, так как у каждой пары есть одинаковые карты)
+        List<int> numbers = new List<int> { 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8 };
+
+        // Переменные для хранения выбранных карт
+        string esimeneValik; // Первая выбранная карта
+        string teineValik; // Вторая выбранная карта
+
+        // Переменная для подсчета попыток
+        int katseid;
+
+        // Список всех объектов PictureBox (каждое изображение)
         List<PictureBox> pildid = new List<PictureBox>();
-        PictureBox picA;
-        PictureBox picB;
-        Label lblOlek;
-        Label lblAegJäänud;
-        System.Windows.Forms.Timer MänguKell;
-        int koguaeg;
-        int allahindlusaeg;
-        bool mängLõppenud = false;
 
-        // Images list to store your actual images instead of file paths
-        List<Image> pildiKogum = new List<Image>();
+        // Переменные для первой и второй выбранной картинки
+        PictureBox piltA; // Первая выбранная картинка
+        PictureBox piltB; // Вторая выбранная картинка
 
+        // Метки на экране для отображения информации
+        Label lblStaatus; // Статус игры (например, "Вы выиграли" или "Вы проиграли")
+        Label lblAeg; // Оставшееся время игры
+
+        // Таймер для отслеживания времени
+        System.Windows.Forms.Timer ManguTaimer;
+
+        // Переменная для общего времени игры (60 секунд)
+        int koguAeg = 60;
+
+        // Переменная для отслеживания оставшегося времени
+        int loendusAeg;
+
+        // Логическая переменная для проверки, завершена ли игра
+        bool mangLabi = false;
+
+        // Переменная для количества подсказок (3 подсказки)
+        int vihjeKordadeArv = 3;
+
+        // Кнопка для подсказок
+        Button btnVihje;
+
+        // Кнопки "Начать заново" и "Проверить результат"
+        Button btnRestart;
+        Button btnKontrolliVastuseid;
+
+        // Метка для отображения лучшего результата
+        Label lblParimTulemus;
+
+        // Переменная для хранения лучшего времени
+        int parimTulemus = int.MaxValue;
+
+        // Конструктор формы игры
         public Sobitamise_mang(int w, int h)
         {
+            // Инициализация компонентов формы
             InitializeComponent();
-            this.ClientSize = new Size(w, h);
-            MänguKell = new System.Windows.Forms.Timer();
-            MänguKell.Interval = 1000;
-            MänguKell.Tick += KellEvent;
 
-            lblOlek = new Label
-            {
-                Location = new Point(20, 200),
-                Size = new Size(200, 30)
-            };
-            lblAegJäänud = new Label
-            {
-                Location = new Point(20, 230),
-                Size = new Size(200, 30)
-            };
-            this.Controls.Add(lblOlek);
-            this.Controls.Add(lblAegJäänud);
+            // Размер окна формы
+            this.ClientSize = new Size(480, 650);
 
-            AlustaRaskusastmeValijat();
-            LaePildid();  // Загрузка изображений
+            // Цвет фона формы
+            this.BackColor = Color.LightBlue;
+
+            // Инициализация таймера и установка интервала на 1 секунду
+            ManguTaimer = new System.Windows.Forms.Timer();
+            ManguTaimer.Interval = 1000;
+
+            // Связывание события таймера с функцией, которая выполняется каждую секунду
+            ManguTaimer.Tick += TaimeriSundmus;
+
+            // Метка для отображения статуса игры
+            lblStaatus = new Label
+            {
+                Location = new Point(20, 520),
+                Size = new Size(200, 40),
+                ForeColor = Color.DarkGreen,
+                Font = new Font("Arial", 12, FontStyle.Bold),
+                Text = "Mäng on alanud!" // Исходное сообщение
+            };
+
+            // Метка для отображения оставшегося времени
+            lblAeg = new Label
+            {
+                Location = new Point(20, 560),
+                Size = new Size(200, 40),
+                ForeColor = Color.Red,
+                Font = new Font("Arial", 12, FontStyle.Bold),
+                Text = "Järelejäänud aeg: 60" // Исходное время
+            };
+
+            // Метка для отображения лучшего результата
+            lblParimTulemus = new Label
+            {
+                Location = new Point(250, 560),
+                Size = new Size(200, 40),
+                ForeColor = Color.Black,
+                Text = "Parim tulemus: --", // В данный момент результата нет
+                Font = new Font("Arial", 10, FontStyle.Italic)
+            };
+
+            // Добавление меток на форму
+            this.Controls.Add(lblStaatus);
+            this.Controls.Add(lblAeg);
+            this.Controls.Add(lblParimTulemus);
+
+            // Добавление кнопки "Начать заново"
+            LisaUuestiNupp();
+
+            // Добавление кнопки для проверки результата
+            LisaKontrolliVastuseidNupp();
+
+            // Добавление кнопки для подсказки
+            LisaVihjeNupp();
+
+            // Загрузка изображений на игровое поле
+            LaadiPildid();
         }
 
-        private void AlustaRaskusastmeValijat()
+        // Функция для добавления кнопки подсказки
+        private void LisaVihjeNupp()
         {
-            ComboBox raskusastmeValija = new ComboBox
+            btnVihje = new Button
             {
-                Location = new Point(20, 170),
-                Size = new Size(120, 30)
+                Text = "Vihje (" + vihjeKordadeArv + " jäi)", // Текст, показывающий количество оставшихся подсказок
+                Size = new Size(100, 30),
+                Location = new Point(320, 480)
             };
-            raskusastmeValija.Items.AddRange(Enum.GetNames(typeof(Raskusaste)));
-            raskusastmeValija.SelectedIndex = 0; // По умолчанию Lihtne
-            raskusastmeValija.SelectedIndexChanged += RaskusastmeValija_SelectedIndexChanged;
-            this.Controls.Add(raskusastmeValija);
+
+            // Связывание события с кнопкой подсказки
+            btnVihje.Click += VihjeNupp_Click;
+
+            // Добавление кнопки на форму
+            this.Controls.Add(btnVihje);
         }
 
-        private void RaskusastmeValija_SelectedIndexChanged(object sender, EventArgs e)
+        // Функция, вызываемая при нажатии на кнопку подсказки
+        private void VihjeNupp_Click(object sender, EventArgs e)
         {
-            valitudRaskusaste = (Raskusaste)Enum.Parse(typeof(Raskusaste), ((ComboBox)sender).SelectedItem.ToString());
-            TaastaMäng();  // Перезапуск игры при изменении сложности
-        }
-
-        private void KellEvent(object sender, EventArgs e)
-        {
-            allahindlusaeg--;
-            lblAegJäänud.Text = "Aeg Jäänud: " + allahindlusaeg;
-            if (allahindlusaeg < 1)
+            // Если остались подсказки и игра не закончена, показываем подсказку
+            if (vihjeKordadeArv > 0 && !mangLabi)
             {
-                MängLõppenud("Aeg on läbi, kaotasite");
+                vihjeKordadeArv--;
+                btnVihje.Text = "Vihje (" + vihjeKordadeArv + " jäi)";
+
+                // Показать две карты в качестве подсказки
+                // Определите логику, чтобы выбрать два случайных изображения
+                var pairedPictures = pildid.Where(x => x.Tag != null).OrderBy(x => Guid.NewGuid()).Take(2).ToList();
+                foreach (var picture in pairedPictures)
+                {
+                    picture.Image = Image.FromFile(@"..\..\..\" + (string)picture.Tag + ".png");
+                }
+                // Через 2 секунды скрыть подсказку
+                System.Windows.Forms.Timer hintTimer = new System.Windows.Forms.Timer();
+                hintTimer.Interval = 2000; // 2 секунды
+                hintTimer.Tick += (s, args) =>
+                {
+                    hintTimer.Stop();
+                    foreach (var picture in pairedPictures)
+                    {
+                        picture.Image = null;
+                    }
+                };
+                hintTimer.Start();
+            }
+        }
+
+        // Функция для обработки события таймера
+        private void TaimeriSundmus(object sender, EventArgs e)
+        {
+            loendusAeg--; // Уменьшаем оставшееся время на 1 секунду
+            lblAeg.Text = "Järelejäänud aeg: " + loendusAeg; // Обновляем текст метки времени
+            if (loendusAeg < 1) // Если время закончилось
+            {
+                ManguLopp("Aeg on läbi, sa oled kaotanud"); // Завершение игры
+                // Скрываем все карты
                 foreach (PictureBox x in pildid)
                 {
                     if (x.Tag != null)
                     {
-                        x.Image = (Image)x.Tag; // Восстановление изображения при завершении
+                        x.Image = Image.FromFile(@"..\..\..\" + (string)x.Tag + ".png"); // Показываем все карты
                     }
                 }
             }
         }
 
-        private void LaePildid()
+        // Функция для загрузки изображений на игровое поле
+        private void LaadiPildid()
         {
-            // Загружаем картинки сразу в список изображений
-            pildiKogum = new List<Image>
+            int vasakPos = 20; // Начальная позиция по оси X
+            int yleminePos = 20; // Начальная позиция по оси Y
+            int ridu = 0; // Счетчик строк
+            for (int i = 0; i < 16; i++)
             {
-                Image.FromFile(@"..\..\..\css.png"),
-                Image.FromFile(@"..\..\..\java.png"),
-                Image.FromFile(@"..\..\..\py.png"),
-                Image.FromFile(@"..\..\..\sql.png"),
-                Image.FromFile(@"..\..\..\swift.png")
-            };
-
-            // Очистка существующих PictureBoxes
-            pildid.Clear();
-            int paarideArv = SaaPaarideArv(valitudRaskusaste);
-            numbrid = Enumerable.Range(0, paarideArv).SelectMany(i => new[] { i, i }).ToList();
-            Segage(numbrid);
-
-            int vasakPos = 20;
-            int üleminePos = 20;
-            int read = 0;
-
-            for (int i = 0; i < numbrid.Count; i++)
-            {
-                PictureBox uusPic = new PictureBox
+                PictureBox uusPilt = new PictureBox(); // Создание нового PictureBox
+                uusPilt.Height = 100; // Высота картинки
+                uusPilt.Width = 100; // Ширина картинки
+                uusPilt.BackColor = Color.DarkGreen; // Цвет фона картинки
+                uusPilt.SizeMode = PictureBoxSizeMode.Zoom; // Режим отображения
+                uusPilt.Click += UusPilt_Click; // Привязка события клика
+                pildid.Add(uusPilt); // Добавление картинки в список
+                if (ridu < 4) // Если не больше 4-х карт в строке
                 {
-                    Height = 50,
-                    Width = 50,
-                    BackColor = Color.LightGray,
-                    SizeMode = PictureBoxSizeMode.StretchImage
-                };
-                uusPic.Click += UusPic_Click;
-                pildid.Add(uusPic);
-                uusPic.Left = vasakPos;
-                uusPic.Top = üleminePos;
-                this.Controls.Add(uusPic);
-
-                vasakPos += 60;
-                read++;
-                if (read == 4)
+                    ridu++;
+                    uusPilt.Left = vasakPos; // Установка позиции по оси X
+                    uusPilt.Top = yleminePos; // Установка позиции по оси Y
+                    this.Controls.Add(uusPilt); // Добавление картинки на форму
+                    vasakPos += 110; // Сдвиг позиции для следующей картинки
+                }
+                if (ridu == 4) // Если уже 4 картинки в строке
                 {
-                    vasakPos = 20;
-                    üleminePos += 60;
-                    read = 0;
+                    vasakPos = 20; // Сброс позиции по оси X
+                    yleminePos += 110; // Сдвиг позиции по оси Y
+                    ridu = 0; // Сброс счетчика строк
                 }
             }
-
-            TaastaMäng();  // Восстановление состояния игры
+            RestartMäng(); // Запуск новой игры
         }
 
-        private int SaaPaarideArv(Raskusaste raskusaste)
+        // Обработчик клика по изображению
+        private void UusPilt_Click(object sender, EventArgs e)
         {
-            return raskusaste switch
-            {
-                Raskusaste.Lihtne => 5,  // 6 пар
-                Raskusaste.Keskmine => 8,  // 8 пар
-                Raskusaste.Raskem => 10,  // 10 пар
-                _ => 5,
-            };
-        }
-
-        private void Segage(List<int> nimekiri)
-        {
-            Random rng = new Random();
-            int n = nimekiri.Count;
-            while (n > 1)
-            {
-                int k = rng.Next(n--);
-                int temp = nimekiri[n];
-                nimekiri[n] = nimekiri[k];
-                nimekiri[k] = temp;
-            }
-        }
-
-        private void TaastaMäng()
-        {
-            Segage(numbrid);
-            for (int i = 0; i < pildid.Count; i++)
-            {
-                pildid[i].Image = null;
-                pildid[i].Tag = pildiKogum[numbrid[i]];  // Связываем картинку с PictureBox через Tag
-            }
-
-            katsed = 0;
-            lblOlek.Text = "Mismatched: " + katsed + " korda.";
-            lblAegJäänud.Text = "Aeg Jäänud: " + koguaeg;
-            mängLõppenud = false;
-            allahindlusaeg = koguaeg;
-            koguaeg = 60;  // Сброс таймера на 60 секунд
-            MänguKell.Start();
-        }
-
-        private void UusPic_Click(object sender, EventArgs e)
-        {
-            if (mängLõppenud)
+            if (mangLabi) // Если игра завершена, не реагируем на клики
                 return;
 
+            // Проверка первой выбранной картинки
             if (esimeneValik == null)
             {
-                picA = sender as PictureBox;
-                if (picA.Tag != null && picA.Image == null)
+                piltA = sender as PictureBox; // Сохранение первой выбранной картинки
+                if (piltA.Tag != null && piltA.Image == null) // Проверка, есть ли тег и изображение не загружено
                 {
-                    picA.Image = (Image)picA.Tag;  // Загружаем изображение из Tag
-                    esimeneValik = (Image)picA.Tag;
+                    piltA.Image = Image.FromFile(@"..\..\..\" + (string)piltA.Tag + ".png"); // Загружаем изображение
+                    esimeneValik = (string)piltA.Tag; // Сохраняем тег первой картинки
                 }
             }
+            // Проверка второй выбранной картинки
             else if (teineValik == null)
             {
-                picB = sender as PictureBox;
-                if (picB.Tag != null && picB.Image == null)
+                piltB = sender as PictureBox; // Сохранение второй выбранной картинки
+                if (piltB.Tag != null && piltB.Image == null) // Проверка, есть ли тег и изображение не загружено
                 {
-                    picB.Image = (Image)picB.Tag;  // Загружаем изображение из Tag
-                    teineValik = (Image)picB.Tag;
+                    piltB.Image = Image.FromFile(@"..\..\..\" + (string)piltB.Tag + ".png"); // Загружаем изображение
+                    teineValik = (string)piltB.Tag; // Сохраняем тег второй картинки
                 }
             }
+            // Если обе картинки выбраны, проверяем их
             else
             {
-                KontrolliPilti(picA, picB);
+                KontrolliPilti(piltA, piltB); // Вызываем функцию для проверки выбранных карт
             }
         }
 
+        // Функция для перезапуска игры
+        private void RestartMäng()
+        {
+            var juhuslikLoend = numbers.OrderBy(x => Guid.NewGuid()).ToList(); // Перемешиваем числа
+            numbers = juhuslikLoend; // Обновляем список чисел
+            for (int i = 0; i < pildid.Count; i++)
+            {
+                pildid[i].Image = null; // Очищаем изображения
+                pildid[i].Tag = numbers[i].ToString(); // Устанавливаем тег для каждой картинки
+            }
+            katseid = 0; // Сбрасываем счетчик попыток
+            mangLabi = false; // Сбрасываем состояние игры
+            loendusAeg = koguAeg; // Восстанавливаем оставшееся время
+            ManguTaimer.Start(); // Запускаем таймер
+            lblStaatus.Text = "Mäng on sisse lülitatud!"; // Обновляем статус игры
+            lblAeg.Text = "Järelejäänud aeg: " + loendusAeg; // Обновляем метку времени
+        }
+
+        // Функция для проверки двух выбранных карт
         private void KontrolliPilti(PictureBox A, PictureBox B)
         {
-            if (esimeneValik == teineValik)
+            if (esimeneValik == teineValik) // Если картинки совпадают
             {
-                A.Tag = null;
-                B.Tag = null;
+                A.Tag = null; // Удаляем тег первой картинки
+                B.Tag = null; // Удаляем тег второй картинки
             }
             else
             {
-                katsed++;
-                lblOlek.Text = "Mismatched " + katsed + " korda.";
+                katseid++; // Увеличиваем счетчик попыток
             }
-            esimeneValik = null;
-            teineValik = null;
-
-            foreach (PictureBox pics in pildid.ToList())
+            esimeneValik = null; // Сбрасываем выбор первой картинки
+            teineValik = null; // Сбрасываем выбор второй картинки
+            foreach (PictureBox pilt in pildid.ToList()) // Для всех карт в списке
             {
-                if (pics.Tag != null)
+                if (pilt.Tag != null) // Если тег не равен null
                 {
-                    pics.Image = null;
+                    pilt.Image = null; // Скрываем картинку
                 }
             }
-
-            if (pildid.All(o => o.Tag == null))
-            {   
-                MängLõppenud("Suurepärane töö, võitsite!!!!");
+            if (pildid.All(o => o.Tag == null)) // Если все картинки открыты
+            {
+                ManguLopp("Hea küll, sa võitsid.!!!!"); // Завершение игры с победным сообщением
+                // Сохранение лучшего результата
+                if (katseid < parimTulemus)
+                {
+                    parimTulemus = katseid; // Обновляем лучший результат
+                    lblParimTulemus.Text = "Parim tulemus: " + parimTulemus; // Обновляем метку лучшего результата
+                }
             }
         }
 
-        private void MängLõppenud(string msg)
+        // Функция для завершения игры
+        private void ManguLopp(string msg)
         {
-            MänguKell.Stop();
-            mängLõppenud = true;
-            MessageBox.Show(msg + " Kliki Taasta, et uuesti mängida.");
+            ManguTaimer.Stop(); // Остановка таймера
+            mangLabi = true; // Устанавливаем состояние игры в завершенное
+            MessageBox.Show(msg + " Uuesti mängimiseks klõpsake nuppu „Start Over“."); // Показываем сообщение
+        }
+
+        // Функция для добавления кнопки проверки результата
+        private void LisaKontrolliVastuseidNupp()
+        {
+            btnKontrolliVastuseid = new Button
+            {
+                Text = "Kontrollige tulemust",
+                Size = new Size(120, 30),
+                Location = new Point(50, 480)
+            };
+            btnKontrolliVastuseid.Click += KontrolliVastuseidNupp_Click; // Привязка события клика
+            this.Controls.Add(btnKontrolliVastuseid); // Добавление кнопки на форму
+        }
+
+        // Функция для добавления кнопки «Начать заново»
+        private void LisaUuestiNupp()
+        {
+            btnRestart = new Button();
+            btnRestart.Text = "Alusta uuesti";
+            btnRestart.Size = new Size(100, 30);
+            btnRestart.Location = new Point(180, 480);
+            btnRestart.Click += btnRestart_Click; // Привязка события клика
+            this.Controls.Add(btnRestart); // Добавление кнопки на форму
+        }
+
+        // Обработчик клика по кнопке проверки результата
+        private void KontrolliVastuseidNupp_Click(object sender, EventArgs e)
+        {
+            if (pildid.All(o => o.Tag == null)) // Если все картинки открыты
+            {
+                ManguLopp("Hea küll, sa võitsid.!!!!"); // Завершение игры с победным сообщением
+            }
+            else // Если остались непарные карты
+            {
+                MessageBox.Show("On ka paaritu kaardid!", "Tulemuse kontrollimine", MessageBoxButtons.OK, MessageBoxIcon.Information); // Сообщение о непарных картах
+            }
+        }
+
+        // Обработчик клика по кнопке «Начать заново»
+        private void btnRestart_Click(object sender, EventArgs e)
+        {
+            RestartMäng(); // Перезапуск игры
         }
     }
 }

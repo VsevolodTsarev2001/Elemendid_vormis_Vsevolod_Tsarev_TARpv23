@@ -205,7 +205,7 @@ namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
             if (timeLeft > 0)
             {
                 timeLeft--;
-                timeLabel.Text = "Jääk: " + timeLeft + " sekundit";
+                timeLabel.Text = "Aeg on jäänud: " + timeLeft + " sekundit";
             }
             else
             {

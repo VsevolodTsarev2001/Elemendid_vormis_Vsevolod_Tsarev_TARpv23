@@ -206,7 +206,7 @@ namespace Elemendid_vormis_Vsevolod_Tsarev_TARpv23
 
         private void matemaatika_viktoriin(object sender, EventArgs e)
         {
-            Matemaatika_viktoriin kolmasVorm = new Matemaatika_viktoriin(200, 200);
+            Matemaatika_viktoriin kolmasVorm = new Matemaatika_viktoriin(500, 800);
             kolmasVorm.Show();
         }
 
